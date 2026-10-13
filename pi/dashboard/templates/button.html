@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>S07 button debug</title>
+  <style>
+    :root { --bg:#10141a; --card:#1a212b; --ink:#e8eef6; --muted:#8b9bb0; --ok:#3dd68c; --bad:#ff6b6b; --accent:#6cb6ff; }
+    body { margin:0; font-family:"Segoe UI",system-ui,sans-serif; background:var(--bg); color:var(--ink); }
+    header, main { max-width:640px; margin:0 auto; padding:1rem; }
+    .dot { display:inline-block; width:0.7rem; height:0.7rem; border-radius:50%; margin-right:0.4rem; }
+    .dot.on { background:var(--ok); } .dot.off { background:var(--bad); }
+    .card { background:var(--card); border-radius:12px; padding:1rem; margin-top:1rem; }
+    .big { font-size:2.5rem; font-variant-numeric:tabular-nums; margin:0.5rem 0; }
+    .hint, .sub { color:var(--muted); font-size:0.9rem; }
+    nav a { color:var(--accent); margin-right:1rem; font-size:0.85rem; }
+    .err { color:var(--bad); min-height:1.2em; }
+    pre { background:#0c1016; padding:0.75rem; border-radius:8px; overflow:auto; font-size:0.85rem; }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>S07 button debug</h1>
+    <p class="sub"><span id="link" class="dot off"></span><span id="status">Looking for Arduino…</span></p>
+    <p class="err" id="error"></p>
+    <nav><a href="/">Joystick</a> <a href="/vitals">Self-test</a></nav>
+  </header>
+  <main>
+    <section class="card">
+      <p class="hint">Press the tactile. <strong>btn</strong> should flip 0→1. <strong>raw</strong> is the pin (1=open, 0=pressed).</p>
+      <p class="big">btn=<span id="btn">—</span>  led=<span id="led">—</span></p>
+      <p class="big" style="font-size:1.4rem">raw=<span id="raw">—</span></p>
+      <pre id="json">{}</pre>
+      <p class="hint">If btn stays 0 while you press: wrong button legs (try the other diagonal) or D7 jumper not seated. If btn flips but LED does not: check D8 / 330Ω / LED polarity.</p>
+    </section>
+  </main>
+  <script>
+    async function tick() {
+      const data = await (await fetch("/api/state")).json();
+      const a = data.arduino || {};
+      document.getElementById("link").className = "dot " + (data.connected ? "on" : "off");
+      document.getElementById("status").textContent = data.connected
+        ? ("Arduino on " + data.serial_port) : ("Disconnected (" + data.serial_port + ")");
+      document.getElementById("error").textContent = data.connected ? "" : (data.error || "");
+      document.getElementById("btn").textContent = a.btn != null ? a.btn : "—";
+      document.getElementById("led").textContent = a.led != null ? a.led : "—";
+      document.getElementById("raw").textContent = a.raw != null ? a.raw : "—";
+      document.getElementById("json").textContent = JSON.stringify(a, null, 2);
+    }
+    tick();
+    setInterval(tick, 80);
+  </script>
+</body>
+</html>

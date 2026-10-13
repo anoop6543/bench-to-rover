@@ -1,0 +1,258 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>EDU MK II joystick</title>
+  <style>
+    :root {
+      --bg: #10141a; --card: #1a212b; --ink: #e8eef6; --muted: #8b9bb0;
+      --ok: #3dd68c; --bad: #ff6b6b; --accent: #6cb6ff;
+    }
+    * { box-sizing: border-box; }
+    body { margin: 0; font-family: "Segoe UI", system-ui, sans-serif; background: var(--bg); color: var(--ink); }
+    header, main { max-width: 1040px; margin: 0 auto; padding: 1rem; }
+    .wire { font-weight: 700; font-family: ui-monospace, monospace; }
+    .w-gnd { color: #c5c5c5; } .w-5v { color: #ff6b6b; } .w-3v { color: #ffa64d; }
+    .w-x { color: #ffe566; } .w-y { color: #3dd68c; } .w-sel { color: #6cb6ff; }
+    svg.wiring { width: 100%; height: auto; background: #0c1016; border-radius: 8px; }
+    h1 { font-size: 1.25rem; margin: 0 0 0.25rem; }
+    .sub, .hint { color: var(--muted); font-size: 0.9rem; }
+    .dot { display: inline-block; width: 0.7rem; height: 0.7rem; border-radius: 50%; margin-right: 0.4rem; }
+    .dot.on { background: var(--ok); } .dot.off { background: var(--bad); }
+    .card { background: var(--card); border-radius: 12px; padding: 1rem; margin-top: 1rem; }
+    canvas { width: 100%; height: 280px; background: #0c1016; border-radius: 8px; }
+    table { width: 100%; border-collapse: collapse; font-size: 0.9rem; }
+    td, th { text-align: left; padding: 0.25rem 0.4rem; color: var(--muted); }
+    td:last-child, .nums { color: var(--ink); font-variant-numeric: tabular-nums; }
+    nav a { color: var(--accent); margin-right: 1rem; font-size: 0.85rem; }
+    .err { color: var(--bad); min-height: 1.2em; }
+    .modes { display: flex; flex-wrap: wrap; gap: 0.5rem; margin-top: 0.75rem; }
+    .modes button {
+      background: #243041; color: var(--ink); border: 1px solid #3a4555;
+      border-radius: 8px; padding: 0.45rem 0.7rem; cursor: pointer; font-size: 0.85rem;
+    }
+    .modes button.active { border-color: var(--accent); color: var(--accent); }
+    .modes button:hover { border-color: var(--muted); }
+    .meta { display: grid; grid-template-columns: repeat(auto-fit, minmax(7rem, 1fr)); gap: 0.5rem; margin-top: 0.75rem; }
+    .meta div { background: #0c1016; border-radius: 8px; padding: 0.5rem 0.65rem; }
+    .meta .k { color: var(--muted); font-size: 0.75rem; } .meta .v { font-size: 1.1rem; font-variant-numeric: tabular-nums; }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>TI joystick → Uno</h1>
+    <p class="sub"><span id="link" class="dot off"></span><span id="status">Looking for Arduino…</span></p>
+    <p class="err" id="error"></p>
+    <nav><a href="/vitals">Self-test</a> <a href="/patterns">Patterns</a></nav>
+  </header>
+  <main>
+    <section class="card">
+      <canvas id="pad" width="360" height="280"></canvas>
+      <p class="nums" id="vals">x=— y=— sel=—</p>
+      <div class="meta">
+        <div><div class="k">dir</div><div class="v" id="dir">—</div></div>
+        <div><div class="k">mag</div><div class="v" id="mag">—</div></div>
+        <div><div class="k">nx / ny</div><div class="v" id="nxy">—</div></div>
+        <div><div class="k">clicks</div><div class="v" id="clicks">—</div></div>
+        <div><div class="k">latched</div><div class="v" id="latched">—</div></div>
+        <div><div class="k">center</div><div class="v" id="center">—</div></div>
+      </div>
+      <div class="modes">
+        <button type="button" data-mode="0" class="active">0 click→L</button>
+        <button type="button" data-mode="1">1 mag blink</button>
+        <button type="button" data-mode="2">2 click latch</button>
+        <button type="button" data-mode="3">3 outside deadzone</button>
+        <button type="button" id="cal">CAL center</button>
+      </div>
+      <p class="hint">Same 6 wires. Idle near center after CAL. Modes only change Uno <strong>L</strong> behavior + JSON fields. Pack LCD stays blank (not wired for SPI).</p>
+    </section>
+    <section class="card">
+      <p class="hint">USB on the left of the Uno. D2 is the third digital hole from the <strong>right</strong> (0, 1, then 2). On the pack, find 3.3V first — that column is J1. Wire types and ends: docs/scenarios/s03/wiring.md</p>
+      <svg class="wiring" viewBox="0 0 1100 640" xmlns="http://www.w3.org/2000/svg" aria-label="EDU MK II and Arduino Uno R3 pin maps">
+        <text x="20" y="22" fill="#8b9bb0" font-size="15">BOOSTXL-EDUMKII  (LCD facing you)</text>
+        <text x="560" y="22" fill="#8b9bb0" font-size="15">Arduino Uno R3  (USB on the left)</text>
+
+        <!-- EDU MK II -->
+        <rect x="16" y="36" width="500" height="580" rx="18" fill="#1e4a7a" stroke="#6cb6ff"/>
+        <rect x="150" y="52" width="220" height="150" rx="6" fill="#0c1016" stroke="#8b9bb0"/>
+        <text x="220" y="132" fill="#8b9bb0" font-size="13">128×128 LCD</text>
+        <circle cx="90" cy="500" r="48" fill="#2a3340" stroke="#ffe566" stroke-width="3"/>
+        <circle cx="90" cy="500" r="16" fill="#1a212b"/>
+        <text x="62" y="568" fill="#ffe566" font-size="12">joystick</text>
+        <rect x="380" y="470" width="36" height="24" rx="4" fill="#2a3340" stroke="#8b9bb0"/>
+        <rect x="424" y="470" width="36" height="24" rx="4" fill="#2a3340" stroke="#8b9bb0"/>
+        <text x="388" y="516" fill="#8b9bb0" font-size="11">S1   S2</text>
+        <circle cx="430" cy="430" r="12" fill="#444"/>
+        <text x="400" y="412" fill="#8b9bb0" font-size="11">RGB</text>
+
+        <!-- Center 2x10: J1 left, J3 right, pin 1/21 at top -->
+        <text x="200" y="220" fill="#ffa64d" font-size="12">J1  pin1 = 3.3V this end</text>
+        <text x="200" y="236" fill="#ff6b6b" font-size="12">J3  pin21 = 5V this end</text>
+        <g font-size="10" font-family="Consolas, monospace">
+          <!-- J1 pins 1-10 -->
+          <rect x="188" y="248" width="70" height="214" rx="4" fill="#0c1016" stroke="#2c3644"/>
+          <text x="196" y="264" fill="#8b9bb0">J1</text>
+          <circle cx="223" cy="278" r="6" fill="#ffa64d"/><text x="236" y="282" fill="#ffa64d">1 3.3V</text>
+          <circle cx="223" cy="296" r="6" fill="#ffe566"/><text x="236" y="300" fill="#ffe566">2 X</text>
+          <circle cx="223" cy="314" r="5" fill="#3a4555"/><text x="236" y="318" fill="#4a5563">3</text>
+          <circle cx="223" cy="332" r="5" fill="#3a4555"/><text x="236" y="336" fill="#4a5563">4</text>
+          <circle cx="223" cy="350" r="6" fill="#6cb6ff"/><text x="236" y="354" fill="#6cb6ff">5 SEL</text>
+          <circle cx="223" cy="368" r="5" fill="#3a4555"/><text x="236" y="372" fill="#4a5563">6 mic</text>
+          <circle cx="223" cy="386" r="5" fill="#3a4555"/>
+          <circle cx="223" cy="404" r="5" fill="#3a4555"/>
+          <circle cx="223" cy="422" r="5" fill="#3a4555"/>
+          <circle cx="223" cy="440" r="5" fill="#3a4555"/><text x="236" y="444" fill="#4a5563">10</text>
+          <!-- J3 pins 21-30 -->
+          <rect x="318" y="248" width="78" height="214" rx="4" fill="#0c1016" stroke="#2c3644"/>
+          <text x="326" y="264" fill="#8b9bb0">J3</text>
+          <circle cx="353" cy="278" r="6" fill="#ff6b6b"/><text x="364" y="282" fill="#ff6b6b">21 5V</text>
+          <circle cx="353" cy="296" r="6" fill="#c5c5c5"/><text x="364" y="300" fill="#c5c5c5">22 GND</text>
+          <circle cx="353" cy="314" r="5" fill="#3a4555"/><text x="364" y="318" fill="#4a5563">23</text>
+          <circle cx="353" cy="332" r="5" fill="#3a4555"/><text x="364" y="336" fill="#4a5563">24</text>
+          <circle cx="353" cy="350" r="5" fill="#3a4555"/><text x="364" y="354" fill="#4a5563">25</text>
+          <circle cx="353" cy="368" r="6" fill="#3dd68c"/><text x="364" y="372" fill="#3dd68c">26 Y</text>
+          <circle cx="353" cy="386" r="5" fill="#3a4555"/>
+          <circle cx="353" cy="404" r="5" fill="#3a4555"/>
+          <circle cx="353" cy="422" r="5" fill="#3a4555"/>
+          <circle cx="353" cy="440" r="5" fill="#3a4555"/><text x="364" y="444" fill="#4a5563">30</text>
+        </g>
+        <text x="180" y="480" fill="#8b9bb0" font-size="11">J2 / J4 below this — leave empty</text>
+
+        <!-- Arduino Uno -->
+        <rect x="548" y="36" width="536" height="580" rx="14" fill="#1a4d8c" stroke="#6cb6ff"/>
+        <rect x="560" y="250" width="70" height="44" rx="4" fill="#c5c5c5"/>
+        <text x="572" y="277" fill="#10141a" font-size="12">USB</text>
+        <circle cx="595" cy="530" r="28" fill="#1a212b" stroke="#8b9bb0"/>
+        <text x="572" y="580" fill="#8b9bb0" font-size="10">power jack</text>
+        <rect x="700" y="200" width="120" height="160" rx="6" fill="#1a212b" opacity="0.5"/>
+        <text x="718" y="285" fill="#8b9bb0" font-size="12">ATmega328P</text>
+        <circle cx="980" cy="92" r="7" fill="#ffb347"/>
+        <text x="994" y="96" fill="#ffb347" font-size="11">L LED</text>
+
+        <!-- Digital top: USB-left so 13 is toward center-left of header, 0 at right -->
+        <text x="700" y="58" fill="#8b9bb0" font-size="12">DIGITAL (top)</text>
+        <g font-size="9" font-family="Consolas, monospace" text-anchor="middle">
+          <!-- 13..8 then 7..0 : x from 700 to 1050 -->
+          <circle cx="720" cy="78" r="5" fill="#3a4555"/><text x="720" y="100" fill="#8b9bb0">13</text>
+          <circle cx="742" cy="78" r="5" fill="#3a4555"/><text x="742" y="100" fill="#8b9bb0">12</text>
+          <circle cx="764" cy="78" r="5" fill="#3a4555"/><text x="764" y="100" fill="#8b9bb0">11</text>
+          <circle cx="786" cy="78" r="5" fill="#3a4555"/><text x="786" y="100" fill="#8b9bb0">10</text>
+          <circle cx="808" cy="78" r="5" fill="#3a4555"/><text x="808" y="100" fill="#8b9bb0">9</text>
+          <circle cx="830" cy="78" r="5" fill="#3a4555"/><text x="830" y="100" fill="#8b9bb0">8</text>
+          <circle cx="862" cy="78" r="5" fill="#3a4555"/><text x="862" y="100" fill="#8b9bb0">7</text>
+          <circle cx="884" cy="78" r="5" fill="#3a4555"/><text x="884" y="100" fill="#8b9bb0">6</text>
+          <circle cx="906" cy="78" r="5" fill="#3a4555"/><text x="906" y="100" fill="#8b9bb0">5</text>
+          <circle cx="928" cy="78" r="5" fill="#3a4555"/><text x="928" y="100" fill="#8b9bb0">4</text>
+          <circle cx="950" cy="78" r="5" fill="#3a4555"/><text x="950" y="100" fill="#8b9bb0">3</text>
+          <circle cx="972" cy="78" r="8" fill="#6cb6ff"/><text x="972" y="100" fill="#6cb6ff">2</text>
+          <circle cx="994" cy="78" r="5" fill="#3a4555"/><text x="994" y="100" fill="#8b9bb0">1</text>
+          <circle cx="1016" cy="78" r="5" fill="#3a4555"/><text x="1016" y="100" fill="#8b9bb0">0</text>
+        </g>
+        <text x="930" y="118" fill="#6cb6ff" font-size="12">D2 = 3rd from the RIGHT  (0, 1, 2)</text>
+
+        <!-- Power + analog bottom -->
+        <text x="640" y="470" fill="#8b9bb0" font-size="12">POWER</text>
+        <g font-size="9" font-family="Consolas, monospace" text-anchor="middle">
+          <circle cx="650" cy="490" r="5" fill="#3a4555"/><text x="650" y="512" fill="#8b9bb0">VIN</text>
+          <circle cx="682" cy="490" r="7" fill="#c5c5c5"/><text x="682" y="512" fill="#c5c5c5">GND</text>
+          <circle cx="714" cy="490" r="5" fill="#3a4555"/><text x="714" y="512" fill="#8b9bb0">GND</text>
+          <circle cx="746" cy="490" r="7" fill="#ff6b6b"/><text x="746" y="512" fill="#ff6b6b">5V</text>
+          <circle cx="780" cy="490" r="7" fill="#ffa64d"/><text x="780" y="512" fill="#ffa64d">3.3V</text>
+          <circle cx="816" cy="490" r="5" fill="#3a4555"/><text x="816" y="512" fill="#8b9bb0">RST</text>
+        </g>
+        <text x="880" y="470" fill="#8b9bb0" font-size="12">ANALOG</text>
+        <g font-size="9" font-family="Consolas, monospace" text-anchor="middle">
+          <circle cx="900" cy="490" r="8" fill="#ffe566"/><text x="900" y="512" fill="#ffe566">A0</text>
+          <circle cx="932" cy="490" r="8" fill="#3dd68c"/><text x="932" y="512" fill="#3dd68c">A1</text>
+          <circle cx="964" cy="490" r="5" fill="#3a4555"/><text x="964" y="512" fill="#8b9bb0">A2</text>
+          <circle cx="996" cy="490" r="5" fill="#3a4555"/><text x="996" y="512" fill="#8b9bb0">A3</text>
+          <circle cx="1028" cy="490" r="5" fill="#3a4555"/><text x="1028" y="512" fill="#8b9bb0">A4</text>
+        </g>
+        <text x="640" y="540" fill="#8b9bb0" font-size="11">Do not use VIN. Do not use A2 for select.</text>
+      </svg>
+      <table>
+        <tr><th>Color</th><th>Pack</th><th>Uno</th></tr>
+        <tr><td class="wire w-gnd">Black</td><td>J3.22 GND</td><td>GND</td></tr>
+        <tr><td class="wire w-5v">Red</td><td>J3.21 5V</td><td>5V</td></tr>
+        <tr><td class="wire w-3v">Orange</td><td>J1.1 3.3V</td><td>3.3V</td></tr>
+        <tr><td class="wire w-x">Yellow</td><td>J1.2 X</td><td>A0</td></tr>
+        <tr><td class="wire w-y">Green</td><td>J3.26 Y</td><td>A1</td></tr>
+        <tr><td class="wire w-sel">Blue</td><td>J1.5 select</td><td>D2</td></tr>
+      </table>
+    </section>
+  </main>
+  <script>
+    const canvas = document.getElementById("pad");
+    const ctx = canvas.getContext("2d");
+    let activeMode = 0;
+
+    function draw(x, y, sel, cx, cy) {
+      const w = canvas.width, h = canvas.height;
+      ctx.fillStyle = "#0c1016"; ctx.fillRect(0, 0, w, h);
+      ctx.strokeStyle = "#2a3544";
+      ctx.beginPath();
+      ctx.moveTo(w / 2, 0); ctx.lineTo(w / 2, h);
+      ctx.moveTo(0, h / 2); ctx.lineTo(w, h / 2);
+      ctx.stroke();
+      // deadzone around calibrated center
+      const zx = ((cx ?? 512) / 1023) * w;
+      const zy = (1 - (cy ?? 512) / 1023) * h;
+      const zr = (80 / 1023) * Math.min(w, h);
+      ctx.strokeStyle = "#3a4555";
+      ctx.beginPath();
+      ctx.arc(zx, zy, zr, 0, Math.PI * 2);
+      ctx.stroke();
+      const px = (x / 1023) * w;
+      const py = (1 - y / 1023) * h;
+      ctx.fillStyle = sel ? "#ff6b6b" : "#6cb6ff";
+      ctx.beginPath();
+      ctx.arc(px, py, sel ? 12 : 8, 0, Math.PI * 2);
+      ctx.fill();
+    }
+
+    function setModeButtons(mode) {
+      activeMode = mode;
+      document.querySelectorAll(".modes button[data-mode]").forEach((btn) => {
+        btn.classList.toggle("active", Number(btn.dataset.mode) === mode);
+      });
+    }
+
+    document.querySelectorAll(".modes button[data-mode]").forEach((btn) => {
+      btn.addEventListener("click", async () => {
+        const mode = Number(btn.dataset.mode);
+        await fetch("/api/joy_mode", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ mode }),
+        });
+        setModeButtons(mode);
+      });
+    });
+    document.getElementById("cal").addEventListener("click", async () => {
+      await fetch("/api/joy_cal", { method: "POST", headers: { "Content-Type": "application/json" }, body: "{}" });
+    });
+
+    async function tick() {
+      const data = await (await fetch("/api/state")).json();
+      const a = data.arduino || {};
+      const joy = a.joy || [512, 512, 0];
+      document.getElementById("link").className = "dot " + (data.connected ? "on" : "off");
+      document.getElementById("status").textContent = data.connected
+        ? ("Arduino on " + data.serial_port) : ("Disconnected (" + data.serial_port + ")");
+      document.getElementById("error").textContent = data.connected ? "" : (data.error || "");
+      draw(Number(joy[0]) || 0, Number(joy[1]) || 0, joy[2], a.cx, a.cy);
+      document.getElementById("vals").textContent = "x=" + joy[0] + "  y=" + joy[1] + "  sel=" + joy[2];
+      document.getElementById("dir").textContent = a.dir != null ? a.dir : "—";
+      document.getElementById("mag").textContent = a.mag != null ? a.mag : "—";
+      document.getElementById("nxy").textContent = (a.nx != null && a.ny != null) ? (a.nx + " / " + a.ny) : "—";
+      document.getElementById("clicks").textContent = a.clicks != null ? a.clicks : "—";
+      document.getElementById("latched").textContent = a.latched != null ? a.latched : "—";
+      document.getElementById("center").textContent = (a.cx != null && a.cy != null) ? (a.cx + "," + a.cy) : "—";
+      if (a.mode != null) setModeButtons(Number(a.mode));
+    }
+    tick();
+    setInterval(tick, 80);
+  </script>
+</body>
+</html>

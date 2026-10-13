@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>S08 PWM LED</title>
+  <style>
+    :root { --bg:#10141a; --card:#1a212b; --ink:#e8eef6; --muted:#8b9bb0; --ok:#3dd68c; --bad:#ff6b6b; --accent:#6cb6ff; }
+    body { margin:0; font-family:"Segoe UI",system-ui,sans-serif; background:var(--bg); color:var(--ink); }
+    header, main { max-width:640px; margin:0 auto; padding:1rem; }
+    .dot { display:inline-block; width:0.7rem; height:0.7rem; border-radius:50%; margin-right:0.4rem; }
+    .dot.on { background:var(--ok); } .dot.off { background:var(--bad); }
+    .card { background:var(--card); border-radius:12px; padding:1rem; margin-top:1rem; }
+    .hint, .sub { color:var(--muted); font-size:0.9rem; }
+    .err { color:var(--bad); min-height:1.2em; }
+    nav a { color:var(--accent); margin-right:1rem; font-size:0.85rem; }
+    input[type=range] { width:100%; }
+    .big { font-size:2rem; font-variant-numeric:tabular-nums; }
+    .modes { display:flex; gap:0.5rem; flex-wrap:wrap; margin-top:0.75rem; }
+    .modes button {
+      background:#243041; color:var(--ink); border:1px solid #3a4555;
+      border-radius:8px; padding:0.45rem 0.7rem; cursor:pointer;
+    }
+    .modes button.active { border-color:var(--accent); color:var(--accent); }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>S08 PWM + joystick</h1>
+    <p class="sub"><span id="link" class="dot off"></span><span id="status">Looking for Arduino…</span></p>
+    <p class="err" id="error"></p>
+    <nav><a href="/">Joystick pad</a> <a href="/button">Button</a></nav>
+  </header>
+  <main>
+    <section class="card">
+      <p class="hint">LED on <strong>D9</strong>. Move joystick <strong>X</strong> (needs A0 + 3.3V + GND) or drag the slider.</p>
+      <p class="big">pwm=<span id="pwm">—</span>  x=<span id="x">—</span>  <span id="joytag"></span></p>
+      <input id="slider" type="range" min="0" max="255" value="64">
+      <div class="modes">
+        <button type="button" data-mode="0" class="active">0 stick when tilted</button>
+        <button type="button" data-mode="1">1 stick always</button>
+        <button type="button" id="cal">CAL center</button>
+      </div>
+      <p class="hint">Mode 0: center the stick to use the slider without fighting. Mode 1: stick always owns brightness.</p>
+    </section>
+  </main>
+  <script>
+    const slider = document.getElementById("slider");
+    let sending = false;
+    let activeMode = 0;
+
+    async function sendPwm(v) {
+      if (sending) return;
+      sending = true;
+      try {
+        await fetch("/api/pwm", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ value: v }),
+        });
+      } finally { sending = false; }
+    }
+
+    slider.addEventListener("input", () => {
+      document.getElementById("pwm").textContent = slider.value;
+      sendPwm(Number(slider.value));
+    });
+
+    function setModeButtons(mode) {
+      activeMode = mode;
+      document.querySelectorAll(".modes button[data-mode]").forEach((btn) => {
+        btn.classList.toggle("active", Number(btn.dataset.mode) === mode);
+      });
+    }
+
+    document.querySelectorAll(".modes button[data-mode]").forEach((btn) => {
+      btn.addEventListener("click", async () => {
+        const mode = Number(btn.dataset.mode);
+        await fetch("/api/joy_mode", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ mode }),
+        });
+        setModeButtons(mode);
+      });
+    });
+    document.getElementById("cal").addEventListener("click", async () => {
+      await fetch("/api/joy_cal", { method: "POST", headers: { "Content-Type": "application/json" }, body: "{}" });
+    });
+
+    async function tick() {
+      const data = await (await fetch("/api/state")).json();
+      const a = data.arduino || {};
+      document.getElementById("link").className = "dot " + (data.connected ? "on" : "off");
+      document.getElementById("status").textContent = data.connected
+        ? ("Arduino on " + data.serial_port) : ("Disconnected (" + data.serial_port + ")");
+      document.getElementById("error").textContent = data.connected ? "" : (data.error || "");
+      if (a.pwm != null && document.activeElement !== slider) {
+        slider.value = a.pwm;
+        document.getElementById("pwm").textContent = a.pwm;
+      }
+      document.getElementById("x").textContent = a.x != null ? a.x : "—";
+      document.getElementById("joytag").textContent = a.joy ? "(joy driving)" : "(slider / idle)";
+      if (a.mode != null) setModeButtons(Number(a.mode));
+    }
+    tick();
+    setInterval(tick, 100);
+  </script>
+</body>
+</html>

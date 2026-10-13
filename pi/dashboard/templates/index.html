@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>RasPi + Uno bench</title>
+  <style>
+    :root {
+      --bg: #10141a;
+      --card: #1a212b;
+      --ink: #e8eef6;
+      --muted: #8b9bb0;
+      --ok: #3dd68c;
+      --bad: #ff6b6b;
+      --accent: #6cb6ff;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: "Segoe UI", system-ui, sans-serif;
+      background: var(--bg);
+      color: var(--ink);
+    }
+    header, main { max-width: 960px; margin: 0 auto; padding: 1rem; }
+    h1 { font-size: 1.25rem; margin: 0 0 0.25rem; }
+    .sub { color: var(--muted); font-size: 0.9rem; }
+    .grid { display: grid; gap: 1rem; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); }
+    .card {
+      background: var(--card);
+      border-radius: 12px;
+      padding: 1rem;
+    }
+    .dot { display: inline-block; width: 0.7rem; height: 0.7rem; border-radius: 50%; margin-right: 0.4rem; }
+    .dot.on { background: var(--ok); }
+    .dot.off { background: var(--bad); }
+    canvas.pad { width: 100%; height: 180px; background: #0c1016; border-radius: 8px; }
+    .bar { height: 10px; background: #0c1016; border-radius: 6px; overflow: hidden; margin: 0.35rem 0 0.75rem; }
+    .bar > span { display: block; height: 100%; background: var(--accent); width: 0%; }
+    label { display: block; color: var(--muted); font-size: 0.8rem; margin-top: 0.5rem; }
+    input[type="range"] { width: 100%; }
+    button {
+      margin-top: 0.75rem;
+      background: var(--accent);
+      color: #081018;
+      border: 0;
+      border-radius: 8px;
+      padding: 0.5rem 0.9rem;
+      font-weight: 600;
+      cursor: pointer;
+    }
+    dl { display: grid; grid-template-columns: auto 1fr; gap: 0.25rem 0.75rem; margin: 0; }
+    dt { color: var(--muted); }
+    dd { margin: 0; font-variant-numeric: tabular-nums; }
+    .err { color: var(--bad); font-size: 0.85rem; min-height: 1.2em; }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>RasPi + Uno bench</h1>
+    <p class="sub"><a href="/" style="color:#6cb6ff">LED patterns</a></p>
+    <p class="sub">
+      <span id="link" class="dot off"></span>
+      <span id="status">Looking for Arduino…</span>
+    </p>
+    <p class="err" id="error"></p>
+  </header>
+  <main class="grid">
+    <section class="card">
+      <h2>Joystick</h2>
+      <canvas class="pad" id="joy" width="300" height="180"></canvas>
+      <p class="sub" id="joyvals">x=— y=— sel=—</p>
+    </section>
+    <section class="card">
+      <h2>Accelerometer</h2>
+      <label>X</label>
+      <div class="bar"><span id="ax"></span></div>
+      <label>Y</label>
+      <div class="bar"><span id="ay"></span></div>
+      <label>Z</label>
+      <div class="bar"><span id="az"></span></div>
+      <p class="sub" id="accelvals">—</p>
+    </section>
+    <section class="card">
+      <h2>Buttons / mic</h2>
+      <dl>
+        <dt>S1</dt><dd id="s1">—</dd>
+        <dt>S2</dt><dd id="s2">—</dd>
+        <dt>Mic</dt><dd id="mic">—</dd>
+      </dl>
+    </section>
+    <section class="card">
+      <h2>RGB / buzzer</h2>
+      <label>Red <span id="rv">0</span></label>
+      <input type="range" id="r" min="0" max="255" value="0">
+      <label>Green <span id="gv">0</span></label>
+      <input type="range" id="g" min="0" max="255" value="0">
+      <label>Blue <span id="bv">0</span></label>
+      <input type="range" id="b" min="0" max="255" value="0">
+      <button type="button" id="beep">Beep</button>
+    </section>
+    <section class="card">
+      <h2>Host</h2>
+      <dl>
+        <dt>Serial</dt><dd id="sport">—</dd>
+        <dt>CPU</dt><dd id="cpu">—</dd>
+        <dt>Load</dt><dd id="load">—</dd>
+        <dt>RAM</dt><dd id="ram">—</dd>
+        <dt>Uptime</dt><dd id="up">—</dd>
+      </dl>
+    </section>
+  </main>
+  <script>
+    const joyCanvas = document.getElementById("joy");
+    const ctx = joyCanvas.getContext("2d");
+    let rgbTimer = null;
+
+    function adcPct(v) {
+      return Math.max(0, Math.min(100, (Number(v) / 1023) * 100));
+    }
+
+    function drawJoy(x, y, sel) {
+      const w = joyCanvas.width;
+      const h = joyCanvas.height;
+      ctx.fillStyle = "#0c1016";
+      ctx.fillRect(0, 0, w, h);
+      ctx.strokeStyle = "#2a3544";
+      ctx.beginPath();
+      ctx.moveTo(w / 2, 0); ctx.lineTo(w / 2, h);
+      ctx.moveTo(0, h / 2); ctx.lineTo(w, h / 2);
+      ctx.stroke();
+      const px = (x / 1023) * w;
+      const py = (1 - y / 1023) * h;
+      ctx.fillStyle = sel ? "#ff6b6b" : "#6cb6ff";
+      ctx.beginPath();
+      ctx.arc(px, py, sel ? 10 : 7, 0, Math.PI * 2);
+      ctx.fill();
+    }
+
+    async function tick() {
+      const res = await fetch("/api/state");
+      const data = await res.json();
+      const a = data.arduino || {};
+      const joy = a.joy || [512, 512, 0];
+      const accel = a.accel || [0, 0, 0];
+      const btn = a.btn || [0, 0];
+      document.getElementById("link").className = "dot " + (data.connected ? "on" : "off");
+      document.getElementById("status").textContent = data.connected
+        ? "Arduino connected on " + data.serial_port
+        : "Arduino disconnected (" + data.serial_port + ")";
+      document.getElementById("error").textContent = data.connected ? "" : (data.error || "");
+      drawJoy(joy[0] || 0, joy[1] || 0, joy[2]);
+      document.getElementById("joyvals").textContent =
+        "x=" + joy[0] + " y=" + joy[1] + " sel=" + joy[2];
+      document.getElementById("ax").style.width = adcPct(accel[0]) + "%";
+      document.getElementById("ay").style.width = adcPct(accel[1]) + "%";
+      document.getElementById("az").style.width = adcPct(accel[2]) + "%";
+      document.getElementById("accelvals").textContent = accel.join(", ");
+      document.getElementById("s1").textContent = btn[0] ? "pressed" : "up";
+      document.getElementById("s2").textContent = btn[1] ? "pressed" : "up";
+      document.getElementById("mic").textContent = a.mic == null ? "—" : a.mic;
+      const pi = data.pi || {};
+      document.getElementById("sport").textContent = data.serial_port;
+      document.getElementById("cpu").textContent = pi.cpu_c == null ? "n/a (not a Pi)" : pi.cpu_c + " °C";
+      document.getElementById("load").textContent = pi.load1 == null ? "—" : pi.load1;
+      document.getElementById("ram").textContent =
+        pi.mem_avail_mb == null ? "—" : pi.mem_avail_mb + " / " + pi.mem_total_mb + " MB free";
+      document.getElementById("up").textContent = pi.uptime_s == null ? "—" : pi.uptime_s + " s";
+    }
+
+    function sendRgb() {
+      const r = Number(document.getElementById("r").value);
+      const g = Number(document.getElementById("g").value);
+      const b = Number(document.getElementById("b").value);
+      document.getElementById("rv").textContent = r;
+      document.getElementById("gv").textContent = g;
+      document.getElementById("bv").textContent = b;
+      fetch("/api/rgb", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ r, g, b })
+      });
+    }
+
+    ["r", "g", "b"].forEach((id) => {
+      document.getElementById(id).addEventListener("input", () => {
+        clearTimeout(rgbTimer);
+        rgbTimer = setTimeout(sendRgb, 80);
+      });
+    });
+    document.getElementById("beep").addEventListener("click", () => {
+      fetch("/api/beep", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ freq: 880, ms: 150 })
+      });
+    });
+    tick();
+    setInterval(tick, 250);
+  </script>
+</body>
+</html>

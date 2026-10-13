@@ -1,0 +1,16 @@
+[Unit]
+Description=RasPi Uno bench dashboard
+After=network.target
+
+[Service]
+Type=simple
+User=pi
+WorkingDirectory=/home/pi/RasPiProj/pi/dashboard
+Environment=SERIAL_PORT=/dev/ttyACM0
+Environment=SERIAL_BAUD=115200
+ExecStart=/home/pi/RasPiProj/pi/dashboard/.venv/bin/python app.py
+Restart=on-failure
+RestartSec=3
+
+[Install]
+WantedBy=multi-user.target
