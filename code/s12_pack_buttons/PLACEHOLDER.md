@@ -1,1 +1,1 @@
-Firmware for S12 is added when this scenario is implemented.
+Implemented: see `s12_pack_buttons.ino`.

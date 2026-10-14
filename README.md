@@ -36,14 +36,14 @@ A **scenario-driven lab**: each ID (S00…S47) has wiring docs, tests, and firmw
 | --- | --- | --- |
 | **0** | Uno USB + joystick wiring (S00–S03) | **Done** |
 | **1** | Breadboard baby steps (S04–S08) | **Done** through PWM + joy→brightness |
-| **1 leftover** | S09 transistor, S10 Morse | Next if staying on breadboard |
+| **Level 2** | S11–S12 done | Next: S13 tilt accel |
 | **2** | More EDU pack jumpers (S11–S18) | Upcoming |
 | **3** | Tiva + stacked pack + LCD (S19–S24) | Later |
 | **4–6** | Rover motors → Pi → Wi-Fi RC (S25–S47) | Endgame |
 
 Live checklist: [docs/scenarios/TRACKING.md](docs/scenarios/TRACKING.md) · full catalog: [docs/scenarios.md](docs/scenarios.md) · sketches: [code/INDEX.md](code/INDEX.md)
 
-**Resume tomorrow:** [S09 transistor](docs/scenarios/s09/setup.md) or jump to Level 2 ([S12 pack buttons](docs/scenarios/s12/setup.md)).
+**Resume:** [S13 tilt](docs/scenarios/s13/setup.md) (accel X/Y/Z on pack).
 
 ---
 
@@ -103,7 +103,10 @@ $env:SERIAL_PORT="COM4"
 
 | URL | Use |
 | --- | --- |
-| http://127.0.0.1:5000/ | Joystick pad (S03) |
+| http://127.0.0.1:5000/ | Joystick map (S03) |
+| http://127.0.0.1:5000/pad | Mouse-pad cursor (S11) |
+| http://127.0.0.1:5000/buttons | Pack S1/S2 (S12) |
+| http://127.0.0.1:5000/tilt | Accel level bubble (S13) |
 | http://127.0.0.1:5000/button | Button debug (S07) |
 | http://127.0.0.1:5000/pwm | PWM slider + joy→dim (S08) |
 | http://127.0.0.1:5000/vitals | Self-test UI (S02) |

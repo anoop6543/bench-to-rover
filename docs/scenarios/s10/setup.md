@@ -3,19 +3,30 @@
 [All scenarios](../../scenarios.md) · [Tracking](../TRACKING.md) · [Code index](../../../code/INDEX.md) · [Prev S09](../s09/setup.md) · **S10** · [Next S11](../s11/setup.md) · [Setup](setup.md) · [Wiring](wiring.md) · [Tests](tests.md) · [Code](../../../code/s10_morse/)
 
 - **Level:** 1
-- **Hardware:** Uno USB
-- **Code:** [`code/s10_morse/`](../../../code/s10_morse/)
-- **Wiring (not code):** [wiring.md](wiring.md)
+- **Hardware:** Uno + S09 breadboard LED (NPN on D8); USB serial
+- **Code:** [`code/s10_morse/s10_morse.ino`](../../../code/s10_morse/s10_morse.ino)
+- **Wiring:** [wiring.md](wiring.md) — leave S09 as-is
 - **Tests:** [tests.md](tests.md)
 
 ## Bring-up
 
-Follow safety in [scenarios.md](../../scenarios.md). Implement when this ID is active.
+1. Leave S09 wired. Plug USB (COM4).
+
+```powershell
+.\scripts\upload-uno.ps1 -Port COM4 -Sketch (Join-Path $PWD "code\s10_morse")
+```
+
+2. Open Serial Monitor **115200**, newline ending (NL or both).
+3. Type `SOS` + Enter. Breadboard LED and onboard L blink `... --- ...`.
+
+## What you are learning
+
+PC sends characters over USB; firmware turns them into timed dots/dashes on GPIO. Same D8→transistor path as S09, now keyed by Morse timing instead of a fixed blink.
 
 ## Safety
 
-3.3 V pack vs 5 V Uno. No stacking EDU MK II on Uno, Pi, or Vilros cobbler. LiPo only with a charger. Rover wheels off the desk until commanded.
+Unplug USB only if you rearrange wires. No new high-current path.
 
 ## Done when
 
-All pass cases in [tests.md](tests.md) are checked on the bench.
+[tests.md](tests.md) T1–T4 pass. (Passed 2026-10-13 — see bench notes there.)

@@ -4,9 +4,15 @@
 
 | ID | Step | Expected | Pass |
 | --- | --- | --- | --- |
-| S10-T1 | Power / connect as in setup.md | No smoke, no brown-out | [ ] |
-| S10-T2 | Firmware or OS from setup.md is running | Enumerates (COM / SSH / Energia) | [ ] |
-| S10-T3 | Happy path | Goal in scenarios.md happens on hardware | [ ] |
-| S10-T4 | Fault path | Unplug / wrong pin / stop fails safe | [ ] |
+| S10-T1 | USB with S09 circuit still up | No heat / smoke | [x] |
+| S10-T2 | Upload `code/s10_morse` | COM4 OK; Serial says `S10 Morse…` | [x] |
+| S10-T3 | Type `SOS` + Enter (115200) | LED/L blink dit-dit-dit / dah-dah-dah / dit-dit-dit; `TX:` + `done` | [x] |
+| S10-T4 | Type `HI THERE` + Enter | Word gap longer between HI and THERE; unknown chars skipped | [x] |
 
-Date: ________  Result: pass / fail  Notes: ________
+Date: **2026-10-13**  Result: **pass** (T1–T4)
+
+## Bench notes
+
+- Kept S09 NPN LED on D8; no rewire. Sketch mirrors onboard L.
+- Upload via `upload-uno.ps1`; Serial Monitor 115200 + Enter to send.
+- Agent-launched `arduino-cli monitor` exits quickly — use a normal Cursor/IDE terminal for typing.

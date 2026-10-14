@@ -20,10 +20,10 @@ Shared dashboard (S01–S03, later Pi): [`pi/dashboard`](../pi/dashboard).
 | S07 | [s07_button_led](s07_button_led/) | placeholder README | [setup](../docs/scenarios/s07/setup.md) |
 | S08 | [s08_pwm_led](s08_pwm_led/) | placeholder README | [setup](../docs/scenarios/s08/setup.md) |
 | S09 | [s09_transistor](s09_transistor/) | placeholder README | [setup](../docs/scenarios/s09/setup.md) |
-| S10 | [s10_morse](s10_morse/) | placeholder README | [setup](../docs/scenarios/s10/setup.md) |
-| S11 | [s11_joy_pad](s11_joy_pad/) | placeholder README | [setup](../docs/scenarios/s11/setup.md) |
-| S12 | [s12_pack_buttons](s12_pack_buttons/) | placeholder README | [setup](../docs/scenarios/s12/setup.md) |
-| S13 | [s13_tilt](s13_tilt/) | placeholder README | [setup](../docs/scenarios/s13/setup.md) |
+| S10 | [s10_morse](s10_morse/) | serial Morse on D8 + L | [setup](../docs/scenarios/s10/setup.md) |
+| S11 | [s11_joy_pad](s11_joy_pad/) | stick→cursor velocity; `/pad` | [setup](../docs/scenarios/s11/setup.md) |
+| S12 | [s12_pack_buttons](s12_pack_buttons/) | S1/S2 on D3/D4; `/buttons` | [setup](../docs/scenarios/s12/setup.md) |
+| S13 | [s13_tilt](s13_tilt/) | accel A2–A4; `/tilt` bubble | [setup](../docs/scenarios/s13/setup.md) |
 | S14 | [s14_rgb](s14_rgb/) | placeholder README | [setup](../docs/scenarios/s14/setup.md) |
 | S15 | [s15_buzzer](s15_buzzer/) | placeholder README | [setup](../docs/scenarios/s15/setup.md) |
 | S16 | [s16_mic](s16_mic/) | placeholder README | [setup](../docs/scenarios/s16/setup.md) |

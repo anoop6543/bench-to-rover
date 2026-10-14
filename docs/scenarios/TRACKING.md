@@ -15,11 +15,11 @@ Each ID: `setup.md` (infra) · `wiring.md` (boards/jumpers) · `tests.md` · `co
 | S06 | 1 | Two-LED heartbeat | `done` | [setup](s06/setup.md) · [wiring](s06/wiring.md) · [tests](s06/tests.md) | [s06_two_led](../../code/s06_two_led/) |
 | S07 | 1 | Button toggles LED | `done` | [setup](s07/setup.md) · [wiring](s07/wiring.md) · [tests](s07/tests.md) | [s07_button_led](../../code/s07_button_led/) |
 | S08 | 1 | LED brightness PWM | `done` | [setup](s08/setup.md) · [wiring](s08/wiring.md) · [tests](s08/tests.md) | [s08_pwm_led](../../code/s08_pwm_led/) |
-| S09 | 1 | Transistor as switch | `not_started` | [setup](s09/setup.md) · [wiring](s09/wiring.md) · [tests](s09/tests.md) | [s09_transistor](../../code/s09_transistor/) |
-| S10 | 1 | Serial Morse | `not_started` | [setup](s10/setup.md) · [wiring](s10/wiring.md) · [tests](s10/tests.md) | [s10_morse](../../code/s10_morse/) |
-| S11 | 2 | Joystick as mouse pad | `not_started` | [setup](s11/setup.md) · [wiring](s11/wiring.md) · [tests](s11/tests.md) | [s11_joy_pad](../../code/s11_joy_pad/) |
-| S12 | 2 | Pack buttons S1/S2 | `not_started` | [setup](s12/setup.md) · [wiring](s12/wiring.md) · [tests](s12/tests.md) | [s12_pack_buttons](../../code/s12_pack_buttons/) |
-| S13 | 2 | Tilt accelerometer | `not_started` | [setup](s13/setup.md) · [wiring](s13/wiring.md) · [tests](s13/tests.md) | [s13_tilt](../../code/s13_tilt/) |
+| S09 | 1 | Transistor as switch | `done` | [setup](s09/setup.md) · [wiring](s09/wiring.md) · [tests](s09/tests.md) | [s09_transistor](../../code/s09_transistor/) |
+| S10 | 1 | Serial Morse | `done` | [setup](s10/setup.md) · [wiring](s10/wiring.md) · [tests](s10/tests.md) | [s10_morse](../../code/s10_morse/) |
+| S11 | 2 | Joystick as mouse pad | `done` | [setup](s11/setup.md) · [wiring](s11/wiring.md) · [tests](s11/tests.md) | [s11_joy_pad](../../code/s11_joy_pad/) |
+| S12 | 2 | Pack buttons S1/S2 | `done` | [setup](s12/setup.md) · [wiring](s12/wiring.md) · [tests](s12/tests.md) | [s12_pack_buttons](../../code/s12_pack_buttons/) |
+| S13 | 2 | Tilt accelerometer | `in_progress` | [setup](s13/setup.md) · [wiring](s13/wiring.md) · [tests](s13/tests.md) | [s13_tilt](../../code/s13_tilt/) |
 | S14 | 2 | RGB mood light | `not_started` | [setup](s14/setup.md) · [wiring](s14/wiring.md) · [tests](s14/tests.md) | [s14_rgb](../../code/s14_rgb/) |
 | S15 | 2 | Buzzer beeps | `not_started` | [setup](s15/setup.md) · [wiring](s15/wiring.md) · [tests](s15/tests.md) | [s15_buzzer](../../code/s15_buzzer/) |
 | S16 | 2 | Mic VU meter | `not_started` | [setup](s16/setup.md) · [wiring](s16/wiring.md) · [tests](s16/tests.md) | [s16_mic](../../code/s16_mic/) |
@@ -57,10 +57,14 @@ Each ID: `setup.md` (infra) · `wiring.md` (boards/jumpers) · `tests.md` · `co
 
 ## Active
 
-**S09** — [setup](s09/setup.md) · [wiring](s09/wiring.md) · [code](../../code/s09_transistor/) · [tests](s09/tests.md)
+**S13** — [setup](s13/setup.md) · [wiring](s13/wiring.md) · [code](../../code/s13_tilt/) · [tests](s13/tests.md) · status `in_progress`
 
 ## Recently completed
 
+**S12** (2026-10-13) — Pack S1→D3, S2→D4; `/buttons` flags + counts; L on S1. Notes: [tests](s12/tests.md).  
+**S11** (2026-10-13) — Stick→cursor velocity on `/pad`; S03 six wires; HOME/CAL. Notes: [tests](s11/tests.md).  
+**S10** (2026-10-13) — Serial Morse on S09 D8/NPN LED + L; `SOS` via Serial Monitor 115200. Notes: [tests](s10/tests.md).  
+**S09** (2026-10-13) — NPN low-side switch: D8→10k→B, 5V→330→LED→C, E→GND; breadboard LED blinks with onboard L. Notes: [tests](s09/tests.md).  
 **S08** (2026-10-12) — D9 PWM + `/pwm` slider; joy→PWM fun add-on. Notes: [tests](s08/tests.md).  
 **S07** (2026-10-12) — D7 button toggles D8 LED; `/button` debug. Notes: [tests](s07/tests.md).  
 

@@ -4,9 +4,15 @@
 
 | ID | Step | Expected | Pass |
 | --- | --- | --- | --- |
-| S11-T1 | Power / connect as in setup.md | No smoke, no brown-out | [ ] |
-| S11-T2 | Firmware or OS from setup.md is running | Enumerates (COM / SSH / Energia) | [ ] |
-| S11-T3 | Happy path | Goal in scenarios.md happens on hardware | [ ] |
-| S11-T4 | Fault path | Unplug / wrong pin / stop fails safe | [ ] |
+| S11-T1 | S03 six wires + USB | No smoke | [x] |
+| S11-T2 | Upload `code/s11_joy_pad` + dashboard | COM4 OK; `/pad` shows connected | [x] |
+| S11-T3 | Hold stick one direction | Cursor **walks** across pad (not stuck to stick angle); trail follows | [x] |
+| S11-T4 | Release stick; click stick | Cursor stops; ripple + `clicks`++; Uno **L** on while held | [x] |
+| S11-T5 | HOME / CAL buttons | Cursor snaps mid; idle center after CAL | [x] |
 
-Date: ________  Result: pass / fail  Notes: ________
+Date: **2026-10-13**  Result: **pass** (T1–T5)
+
+## Bench notes
+
+- Reused S03 jumpers; S09 transistor circuit unplugged (unused by S11).
+- Dashboard via `pi/dashboard/.venv`; page **http://127.0.0.1:5000/pad** (not `/`).

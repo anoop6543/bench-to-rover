@@ -129,9 +129,9 @@ These are the capstones. Each needs Level 4–5 solid.
 4. ~~**S06** — two-LED heartbeat~~ **done 2026-10-12**  
 5. ~~**S07** — button + LED~~ **done 2026-10-12**  
 6. ~~**S08** — PWM LED brightness~~ **done 2026-10-12**  
-7. **S09** — transistor switch ← **next** (or **S12** pack buttons)  
-8. **S12** — pack S1/S2  
-9. **S13** — tilt  
+7. ~~**S09–S12** — transistor, Morse, mouse pad, S1/S2~~ **done 2026-10-13**  
+8. **S13** — tilt accel ← **next**  
+9. **S14** — RGB · **S15** — buzzer  
 10. **S19–S20** / rover / Pi later  
 
-When you say “next,” start **S09** (or jump to Level 2 pack).
+When you say “next,” start **S13**.

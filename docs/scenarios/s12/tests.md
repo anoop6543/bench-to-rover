@@ -4,9 +4,14 @@
 
 | ID | Step | Expected | Pass |
 | --- | --- | --- | --- |
-| S12-T1 | Power / connect as in setup.md | No smoke, no brown-out | [ ] |
-| S12-T2 | Firmware or OS from setup.md is running | Enumerates (COM / SSH / Energia) | [ ] |
-| S12-T3 | Happy path | Goal in scenarios.md happens on hardware | [ ] |
-| S12-T4 | Fault path | Unplug / wrong pin / stop fails safe | [ ] |
+| S12-T1 | S03 wires + S1→D3, S2→D4 + USB | No smoke | [x] |
+| S12-T2 | Upload `code/s12_pack_buttons` + `/buttons` | COM4 OK; connected | [x] |
+| S12-T3 | Press **S1** | `btn[0]=1`; counts[0]++; Uno **L** on while held | [x] |
+| S12-T4 | Press **S2** | `btn[1]=1`; counts[1]++; L stays off (unless S1 also held) | [x] |
 
-Date: ________  Result: pass / fail  Notes: ________
+Date: **2026-10-13**  Result: **pass** (T1–T4)
+
+## Bench notes
+
+- Cleared prior D3 jumper; S1=J4.33→D3, S2=J4.32→D4. S03 joystick wires kept.
+- UI: http://127.0.0.1:5000/buttons

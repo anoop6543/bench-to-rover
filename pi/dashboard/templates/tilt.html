@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>S13 tilt</title>
+  <style>
+    :root {
+      --bg: #10141a; --card: #1a212b; --ink: #e8eef6; --muted: #8b9bb0;
+      --ok: #3dd68c; --bad: #ff6b6b; --accent: #6cb6ff;
+    }
+    * { box-sizing: border-box; }
+    body { margin: 0; font-family: "Segoe UI", system-ui, sans-serif; background: var(--bg); color: var(--ink); }
+    header, main { max-width: 720px; margin: 0 auto; padding: 1rem; }
+    h1 { font-size: 1.25rem; margin: 0 0 0.25rem; }
+    .sub, .hint { color: var(--muted); font-size: 0.9rem; }
+    .dot { display: inline-block; width: 0.7rem; height: 0.7rem; border-radius: 50%; margin-right: 0.4rem; }
+    .dot.on { background: var(--ok); } .dot.off { background: var(--bad); }
+    .card { background: var(--card); border-radius: 12px; padding: 1rem; margin-top: 1rem; }
+    canvas.level { width: 100%; height: 280px; background: #0c1016; border-radius: 8px; display: block; }
+    .bars { display: grid; gap: 0.55rem; margin-top: 0.75rem; }
+    .bar-row { display: grid; grid-template-columns: 1.5rem 1fr 3.5rem; gap: 0.5rem; align-items: center; }
+    .bar-row .lab { color: var(--muted); font-size: 0.85rem; }
+    .track { height: 14px; background: #0c1016; border-radius: 7px; overflow: hidden; position: relative; }
+    .track .fill { height: 100%; background: var(--accent); width: 50%; transform-origin: left center; }
+    .bar-row .num { font-variant-numeric: tabular-nums; font-size: 0.9rem; text-align: right; }
+    .row { display: flex; flex-wrap: wrap; gap: 0.5rem; margin-top: 0.75rem; }
+    .row button {
+      background: #243041; color: var(--ink); border: 1px solid #3a4555;
+      border-radius: 8px; padding: 0.45rem 0.7rem; cursor: pointer;
+    }
+    nav a { color: var(--accent); margin-right: 1rem; font-size: 0.85rem; }
+    .err { color: var(--bad); min-height: 1.2em; }
+    .meta { color: var(--muted); font-size: 0.85rem; margin-top: 0.5rem; font-variant-numeric: tabular-nums; }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>S13 — tilt / level bubble</h1>
+    <p class="sub"><span id="link" class="dot off"></span><span id="status">Looking for Arduino…</span></p>
+    <p class="err" id="error"></p>
+    <nav>
+      <a href="/buttons">S12 buttons</a>
+      <a href="/pad">S11 pad</a>
+      <a href="/">S03 stick</a>
+    </nav>
+  </header>
+  <main>
+    <section class="card">
+      <canvas class="level" id="level" width="640" height="280"></canvas>
+      <p class="hint">Lay the pack flat → <strong>CAL</strong>. Tip it — bubble and bars follow accel X/Y (Z is the “up” bar).</p>
+      <div class="bars">
+        <div class="bar-row"><span class="lab">X</span><div class="track"><div class="fill" id="bx"></div></div><span class="num" id="vx">—</span></div>
+        <div class="bar-row"><span class="lab">Y</span><div class="track"><div class="fill" id="by"></div></div><span class="num" id="vy">—</span></div>
+        <div class="bar-row"><span class="lab">Z</span><div class="track"><div class="fill" id="bz"></div></div><span class="num" id="vz">—</span></div>
+      </div>
+      <p class="meta" id="meta">nx=— ny=— nz=—</p>
+      <div class="row">
+        <button type="button" id="cal">CAL flat</button>
+      </div>
+    </section>
+  </main>
+  <script>
+    const canvas = document.getElementById("level");
+    const ctx = canvas.getContext("2d");
+
+    function setBar(id, raw, mid) {
+      // map ~0..700 around mid → 0..100% width from center feel
+      const el = document.getElementById(id);
+      const pct = Math.max(5, Math.min(100, (raw / 700) * 100));
+      el.style.width = pct + "%";
+      el.style.background = Math.abs((raw - (mid || 337))) < 40 ? "#3dd68c" : "#6cb6ff";
+    }
+
+    function drawBubble(nx, ny) {
+      const w = canvas.width, h = canvas.height;
+      ctx.fillStyle = "#0c1016";
+      ctx.fillRect(0, 0, w, h);
+      ctx.strokeStyle = "#2a3544";
+      ctx.beginPath();
+      ctx.arc(w / 2, h / 2, Math.min(w, h) * 0.38, 0, Math.PI * 2);
+      ctx.stroke();
+      ctx.beginPath();
+      ctx.arc(w / 2, h / 2, 18, 0, Math.PI * 2);
+      ctx.stroke();
+      ctx.beginPath();
+      ctx.moveTo(w / 2, 20); ctx.lineTo(w / 2, h - 20);
+      ctx.moveTo(40, h / 2); ctx.lineTo(w - 40, h / 2);
+      ctx.stroke();
+
+      const scale = 0.55;
+      const px = w / 2 + Math.max(-180, Math.min(180, nx * scale));
+      const py = h / 2 - Math.max(-120, Math.min(120, ny * scale));
+      ctx.fillStyle = "#6cb6ff";
+      ctx.beginPath();
+      ctx.arc(px, py, 14, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.strokeStyle = "#e8eef6";
+      ctx.lineWidth = 2;
+      ctx.stroke();
+      ctx.lineWidth = 1;
+    }
+
+    document.getElementById("cal").addEventListener("click", async () => {
+      await fetch("/api/joy_cal", { method: "POST", headers: { "Content-Type": "application/json" }, body: "{}" });
+    });
+
+    async function tick() {
+      const data = await (await fetch("/api/state")).json();
+      const a = data.arduino || {};
+      const accel = a.accel || [0, 0, 0];
+      document.getElementById("link").className = "dot " + (data.connected ? "on" : "off");
+      document.getElementById("status").textContent = data.connected
+        ? ("Arduino on " + data.serial_port) : ("Disconnected (" + data.serial_port + ")");
+      document.getElementById("error").textContent = data.connected ? "" : (data.error || "");
+      drawBubble(Number(a.nx) || 0, Number(a.ny) || 0);
+      setBar("bx", Number(accel[0]) || 0, a.cx);
+      setBar("by", Number(accel[1]) || 0, a.cy);
+      setBar("bz", Number(accel[2]) || 0, a.cz);
+      document.getElementById("vx").textContent = accel[0];
+      document.getElementById("vy").textContent = accel[1];
+      document.getElementById("vz").textContent = accel[2];
+      document.getElementById("meta").textContent =
+        "nx=" + (a.nx != null ? a.nx : "—") +
+        "  ny=" + (a.ny != null ? a.ny : "—") +
+        "  nz=" + (a.nz != null ? a.nz : "—") +
+        "  center " + (a.cx != null ? (a.cx + "," + a.cy + "," + a.cz) : "—");
+    }
+    tick();
+    setInterval(tick, 80);
+  </script>
+</body>
+</html>

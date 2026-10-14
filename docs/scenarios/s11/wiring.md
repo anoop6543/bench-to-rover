@@ -2,12 +2,20 @@
 
 [All scenarios](../../scenarios.md) · [Tracking](../TRACKING.md) · [Code index](../../../code/INDEX.md) · [Prev S10](../s10/setup.md) · **S11** · [Next S12](../s12/setup.md) · [Setup](setup.md) · [Wiring](wiring.md) · [Tests](tests.md) · [Code](../../../code/s11_joy_pad/)
 
-Boards and jumpers for this scenario live **here**, not in the code folder.
+**Same 6 jumpers as S03.** Full pin table: [s03/wiring.md](../s03/wiring.md).
 
-If this ID is USB-only, there are **no Dupont wires**. If it needs jumpers, list for each net:
+| Color | Pack | Uno |
+| --- | --- | --- |
+| Black | J3.22 GND | GND |
+| Red | J3.21 5V | 5V |
+| Orange | J1.1 3.3V | 3.3V |
+| Yellow | J1.2 X | A0 |
+| Green (M-F) | J3.26 Y | A1 |
+| Blue | J1.5 SEL | D2 |
 
-- **Wire type** (male-to-male vs male-to-female)
-- **End A** (which housing / pin)
-- **End B** (which housing / pin)
+You can leave the S09 transistor LED on the breadboard — it is unused by this sketch (D8 idle). Pack LCD stays blank (SPI not wired).
 
-Shared EDU MK II pin map: [_shared/edumkii-pinout.md](../_shared/edumkii-pinout.md).
+## Do not
+
+- Stack pack on Uno / LaunchPad / cobbler for this scenario.  
+- Use VIN instead of 5V.

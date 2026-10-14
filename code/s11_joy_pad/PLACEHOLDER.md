@@ -1,1 +1,1 @@
-Firmware for S11 is added when this scenario is implemented.
+Implemented: see `s11_joy_pad.ino`.

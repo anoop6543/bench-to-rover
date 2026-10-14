@@ -2,12 +2,21 @@
 
 [All scenarios](../../scenarios.md) · [Tracking](../TRACKING.md) · [Code index](../../../code/INDEX.md) · [Prev S12](../s12/setup.md) · **S13** · [Next S14](../s14/setup.md) · [Setup](setup.md) · [Wiring](wiring.md) · [Tests](tests.md) · [Code](../../../code/s13_tilt/)
 
-Boards and jumpers for this scenario live **here**, not in the code folder.
+**Keep S03 power (GND / 5V / 3.3V).** Joystick and S12 buttons can stay. Add three accel jumpers (male-to-male into pack top → Uno).
 
-If this ID is USB-only, there are **no Dupont wires**. If it needs jumpers, list for each net:
+| Suggest color | Pack top | Signal | Uno |
+| --- | --- | --- | --- |
+| Brown | **J3.23** | Accel **X** | **A2** |
+| Grey | **J3.24** | Accel **Y** | **A3** |
+| White (spare) | **J3.25** | Accel **Z** | **A4** |
 
-- **Wire type** (male-to-male vs male-to-female)
-- **End A** (which housing / pin)
-- **End B** (which housing / pin)
+J3 column (same as 5V/GND/joy Y): **21=5V, 22=GND, 23=X, 24=Y, 25=Z, 26=joy Y**. Do not pull the green joy-Y wire off **26**.
 
-Shared EDU MK II pin map: [_shared/edumkii-pinout.md](../_shared/edumkii-pinout.md).
+Accel is **3.3 V** analog. Leave Uno **AREF** alone (still 5 V) — readings land ~0–675; **CAL** with the pack flat.
+
+Shared map: [_shared/edumkii-pinout.md](../_shared/edumkii-pinout.md).
+
+## Do not
+
+- Land on J3.26 (joystick Y).  
+- Enable EXTERNAL AREF without jumpering AREF→3.3V (not needed for S13).

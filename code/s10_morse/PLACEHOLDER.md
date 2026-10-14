@@ -1,1 +1,1 @@
-Firmware for S10 is added when this scenario is implemented.
+Implemented: see `s10_morse.ino`.

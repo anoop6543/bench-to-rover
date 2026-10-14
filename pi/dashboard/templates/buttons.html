@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>S12 pack S1 / S2</title>
+  <style>
+    :root {
+      --bg: #10141a; --card: #1a212b; --ink: #e8eef6; --muted: #8b9bb0;
+      --ok: #3dd68c; --bad: #ff6b6b; --accent: #6cb6ff;
+    }
+    * { box-sizing: border-box; }
+    body { margin: 0; font-family: "Segoe UI", system-ui, sans-serif; background: var(--bg); color: var(--ink); }
+    header, main { max-width: 640px; margin: 0 auto; padding: 1rem; }
+    h1 { font-size: 1.25rem; margin: 0 0 0.25rem; }
+    .sub, .hint { color: var(--muted); font-size: 0.9rem; }
+    .dot { display: inline-block; width: 0.7rem; height: 0.7rem; border-radius: 50%; margin-right: 0.4rem; }
+    .dot.on { background: var(--ok); } .dot.off { background: var(--bad); }
+    .card { background: var(--card); border-radius: 12px; padding: 1rem; margin-top: 1rem; }
+    .keys { display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem; margin-top: 0.5rem; }
+    .key {
+      background: #0c1016; border-radius: 12px; padding: 1.25rem 1rem; text-align: center;
+      border: 2px solid #2a3544; transition: border-color 0.08s, background 0.08s;
+    }
+    .key.down { border-color: var(--accent); background: #1a2a3d; }
+    .key .lab { color: var(--muted); font-size: 0.85rem; }
+    .key .val { font-size: 2.5rem; font-variant-numeric: tabular-nums; margin: 0.25rem 0; }
+    .key .cnt { color: var(--muted); font-size: 0.9rem; }
+    nav a { color: var(--accent); margin-right: 1rem; font-size: 0.85rem; }
+    .err { color: var(--bad); min-height: 1.2em; }
+    pre { background: #0c1016; padding: 0.75rem; border-radius: 8px; overflow: auto; font-size: 0.8rem; }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>S12 — pack buttons S1 / S2</h1>
+    <p class="sub"><span id="link" class="dot off"></span><span id="status">Looking for Arduino…</span></p>
+    <p class="err" id="error"></p>
+    <nav>
+      <a href="/pad">S11 pad</a>
+      <a href="/">S03 stick</a>
+      <a href="/button">S07 tactile</a>
+    </nav>
+  </header>
+  <main>
+    <section class="card">
+      <p class="hint">S1 = J4.33 → D3 (lights Uno <strong>L</strong>). S2 = J4.32 → D4. Press on the pack face.</p>
+      <div class="keys">
+        <div class="key" id="k1">
+          <div class="lab">S1</div>
+          <div class="val" id="s1">—</div>
+          <div class="cnt">count <span id="c1">—</span></div>
+        </div>
+        <div class="key" id="k2">
+          <div class="lab">S2</div>
+          <div class="val" id="s2">—</div>
+          <div class="cnt">count <span id="c2">—</span></div>
+        </div>
+      </div>
+      <p class="hint" style="margin-top:0.75rem">joy sel (D2) = <span id="sel">—</span></p>
+      <pre id="json">{}</pre>
+    </section>
+  </main>
+  <script>
+    async function tick() {
+      const data = await (await fetch("/api/state")).json();
+      const a = data.arduino || {};
+      const btn = a.btn || [0, 0];
+      const counts = a.counts || [0, 0];
+      const s1 = Number(btn[0]) || 0;
+      const s2 = Number(btn[1]) || 0;
+      document.getElementById("link").className = "dot " + (data.connected ? "on" : "off");
+      document.getElementById("status").textContent = data.connected
+        ? ("Arduino on " + data.serial_port) : ("Disconnected (" + data.serial_port + ")");
+      document.getElementById("error").textContent = data.connected ? "" : (data.error || "");
+      document.getElementById("s1").textContent = s1;
+      document.getElementById("s2").textContent = s2;
+      document.getElementById("c1").textContent = counts[0] != null ? counts[0] : "—";
+      document.getElementById("c2").textContent = counts[1] != null ? counts[1] : "—";
+      document.getElementById("sel").textContent = a.sel != null ? a.sel : "—";
+      document.getElementById("k1").classList.toggle("down", !!s1);
+      document.getElementById("k2").classList.toggle("down", !!s2);
+      document.getElementById("json").textContent = JSON.stringify(a, null, 2);
+    }
+    tick();
+    setInterval(tick, 80);
+  </script>
+</body>
+</html>

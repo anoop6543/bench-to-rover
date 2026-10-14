@@ -164,6 +164,20 @@ def pwm():
     return render_template("pwm.html")
 
 
+@app.get("/pad")
+def pad():
+    return render_template("pad.html")
+
+
+@app.get("/buttons")
+def buttons():
+    return render_template("buttons.html")
+
+
+@app.get("/tilt")
+def tilt():
+    return render_template("tilt.html")
+
 
 @app.get("/bench")
 def bench():
@@ -255,6 +269,12 @@ def api_joy_mode():
 @app.post("/api/joy_cal")
 def api_joy_cal():
     ok = send_line("CAL")
+    return jsonify({"ok": ok}), 200 if ok else 503
+
+
+@app.post("/api/joy_home")
+def api_joy_home():
+    ok = send_line("HOME")
     return jsonify({"ok": ok}), 200 if ok else 503
 
 

@@ -1,1 +1,1 @@
-Firmware for S13 is added when this scenario is implemented.
+Implemented: see `s13_tilt.ino`.

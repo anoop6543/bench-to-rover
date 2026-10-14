@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>S11 Mouse pad</title>
+  <style>
+    :root {
+      --bg: #10141a; --card: #1a212b; --ink: #e8eef6; --muted: #8b9bb0;
+      --ok: #3dd68c; --bad: #ff6b6b; --accent: #6cb6ff;
+    }
+    * { box-sizing: border-box; }
+    body { margin: 0; font-family: "Segoe UI", system-ui, sans-serif; background: var(--bg); color: var(--ink); }
+    header, main { max-width: 720px; margin: 0 auto; padding: 1rem; }
+    h1 { font-size: 1.25rem; margin: 0 0 0.25rem; }
+    .sub, .hint { color: var(--muted); font-size: 0.9rem; }
+    .dot { display: inline-block; width: 0.7rem; height: 0.7rem; border-radius: 50%; margin-right: 0.4rem; }
+    .dot.on { background: var(--ok); } .dot.off { background: var(--bad); }
+    .card { background: var(--card); border-radius: 12px; padding: 1rem; margin-top: 1rem; }
+    canvas.pad { width: 100%; height: 360px; background: #0c1016; border-radius: 8px; display: block; }
+    .meta { display: grid; grid-template-columns: repeat(auto-fit, minmax(6.5rem, 1fr)); gap: 0.5rem; margin-top: 0.75rem; }
+    .meta div { background: #0c1016; border-radius: 8px; padding: 0.5rem 0.65rem; }
+    .meta .k { color: var(--muted); font-size: 0.75rem; }
+    .meta .v { font-size: 1.05rem; font-variant-numeric: tabular-nums; }
+    .row { display: flex; flex-wrap: wrap; gap: 0.5rem; margin-top: 0.75rem; }
+    .row button {
+      background: #243041; color: var(--ink); border: 1px solid #3a4555;
+      border-radius: 8px; padding: 0.45rem 0.7rem; cursor: pointer; font-size: 0.85rem;
+    }
+    .row button:hover { border-color: var(--muted); }
+    nav a { color: var(--accent); margin-right: 1rem; font-size: 0.85rem; }
+    .err { color: var(--bad); min-height: 1.2em; }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>S11 — joystick as mouse pad</h1>
+    <p class="sub"><span id="link" class="dot off"></span><span id="status">Looking for Arduino…</span></p>
+    <p class="err" id="error"></p>
+    <nav>
+      <a href="/">S03 stick map</a>
+      <a href="/pwm">PWM</a>
+      <a href="/vitals">Vitals</a>
+    </nav>
+  </header>
+  <main>
+    <section class="card">
+      <canvas class="pad" id="pad" width="640" height="360"></canvas>
+      <p class="hint">Hold the stick to <strong>move the cursor</strong> (velocity). Click the stick to “click.” Idle = stop.</p>
+      <div class="meta">
+        <div><div class="k">cursor</div><div class="v" id="cur">—</div></div>
+        <div><div class="k">stick nx/ny</div><div class="v" id="nxy">—</div></div>
+        <div><div class="k">mag</div><div class="v" id="mag">—</div></div>
+        <div><div class="k">sel</div><div class="v" id="sel">—</div></div>
+        <div><div class="k">clicks</div><div class="v" id="clicks">—</div></div>
+      </div>
+      <div class="row">
+        <button type="button" id="home">HOME cursor</button>
+        <button type="button" id="cal">CAL stick center</button>
+      </div>
+    </section>
+  </main>
+  <script>
+    const canvas = document.getElementById("pad");
+    const ctx = canvas.getContext("2d");
+    const trail = [];
+    const MAX_TRAIL = 40;
+    let ripples = [];
+    let lastSel = 0;
+
+    function draw(cx, cy, sel, nx, ny) {
+      const w = canvas.width, h = canvas.height;
+      ctx.fillStyle = "#0c1016";
+      ctx.fillRect(0, 0, w, h);
+
+      // grid
+      ctx.strokeStyle = "#1a2430";
+      ctx.lineWidth = 1;
+      for (let i = 1; i < 8; i++) {
+        const x = (i / 8) * w, y = (i / 8) * h;
+        ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, h); ctx.stroke();
+        ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(w, y); ctx.stroke();
+      }
+      ctx.strokeStyle = "#2a3544";
+      ctx.beginPath();
+      ctx.moveTo(w / 2, 0); ctx.lineTo(w / 2, h);
+      ctx.moveTo(0, h / 2); ctx.lineTo(w, h / 2);
+      ctx.stroke();
+
+      // stick inset (bottom-left)
+      const ix = 56, iy = h - 56, ir = 40;
+      ctx.strokeStyle = "#3a4555";
+      ctx.beginPath(); ctx.arc(ix, iy, ir, 0, Math.PI * 2); ctx.stroke();
+      const sx = ix + Math.max(-1, Math.min(1, (nx || 0) / 400)) * (ir - 8);
+      const sy = iy - Math.max(-1, Math.min(1, (ny || 0) / 400)) * (ir - 8);
+      ctx.fillStyle = "#6cb6ff";
+      ctx.beginPath(); ctx.arc(sx, sy, 6, 0, Math.PI * 2); ctx.fill();
+      ctx.fillStyle = "#8b9bb0";
+      ctx.font = "11px sans-serif";
+      ctx.fillText("stick", ix - 14, iy + ir + 14);
+
+      // trail
+      const px = (cx / 1023) * w;
+      const py = (1 - cy / 1023) * h;
+      trail.push({ x: px, y: py });
+      if (trail.length > MAX_TRAIL) trail.shift();
+      for (let i = 0; i < trail.length; i++) {
+        const t = trail[i];
+        const a = (i + 1) / trail.length;
+        ctx.fillStyle = "rgba(108,182,255," + (0.15 * a) + ")";
+        ctx.beginPath();
+        ctx.arc(t.x, t.y, 3 + 4 * a, 0, Math.PI * 2);
+        ctx.fill();
+      }
+
+      // ripples on click
+      ripples = ripples.filter((r) => r.life > 0);
+      for (const r of ripples) {
+        ctx.strokeStyle = "rgba(255,107,107," + (r.life / 20) + ")";
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.arc(r.x, r.y, (20 - r.life) * 3, 0, Math.PI * 2);
+        ctx.stroke();
+        r.life--;
+      }
+
+      // cursor
+      ctx.fillStyle = sel ? "#ff6b6b" : "#e8eef6";
+      ctx.strokeStyle = sel ? "#ff6b6b" : "#6cb6ff";
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.moveTo(px, py - 14); ctx.lineTo(px, py + 14);
+      ctx.moveTo(px - 14, py); ctx.lineTo(px + 14, py);
+      ctx.stroke();
+      ctx.beginPath();
+      ctx.arc(px, py, sel ? 10 : 7, 0, Math.PI * 2);
+      ctx.fill();
+    }
+
+    document.getElementById("home").addEventListener("click", async () => {
+      await fetch("/api/joy_home", { method: "POST", headers: { "Content-Type": "application/json" }, body: "{}" });
+      trail.length = 0;
+    });
+    document.getElementById("cal").addEventListener("click", async () => {
+      await fetch("/api/joy_cal", { method: "POST", headers: { "Content-Type": "application/json" }, body: "{}" });
+    });
+
+    async function tick() {
+      const data = await (await fetch("/api/state")).json();
+      const a = data.arduino || {};
+      const joy = a.joy || [512, 512, 0];
+      const cur = a.cursor || [512, 512];
+      const sel = Number(joy[2]) || 0;
+      document.getElementById("link").className = "dot " + (data.connected ? "on" : "off");
+      document.getElementById("status").textContent = data.connected
+        ? ("Arduino on " + data.serial_port) : ("Disconnected (" + data.serial_port + ")");
+      document.getElementById("error").textContent = data.connected ? "" : (data.error || "");
+      if (sel && !lastSel) {
+        ripples.push({ x: (cur[0] / 1023) * canvas.width, y: (1 - cur[1] / 1023) * canvas.height, life: 20 });
+      }
+      lastSel = sel;
+      draw(Number(cur[0]) || 512, Number(cur[1]) || 512, sel, a.nx, a.ny);
+      document.getElementById("cur").textContent = cur[0] + "," + cur[1];
+      document.getElementById("nxy").textContent = (a.nx != null ? a.nx : "—") + " / " + (a.ny != null ? a.ny : "—");
+      document.getElementById("mag").textContent = a.mag != null ? a.mag : "—";
+      document.getElementById("sel").textContent = sel;
+      document.getElementById("clicks").textContent = a.clicks != null ? a.clicks : "—";
+    }
+    tick();
+    setInterval(tick, 50);
+  </script>
+</body>
+</html>
